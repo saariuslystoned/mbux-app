@@ -32,6 +32,14 @@ Claude additionally offers its documented Claude Code draft-composer route as an
 
 This boundary is supported by the public [Android Sharesheet contract](https://developer.android.com/develop/ui/compose/sharing/send) and Anthropic's [Claude mobile link documentation](https://support.claude.com/en/articles/14898120-open-the-claude-mobile-app-with-a-link). It is distinct from the future Mac relay: real launch/resume routing, cross-session status, account authorization, and broker-owned provider mappings remain separately gated work. Voice transcription is also a later device slice; the current handoff accepts only an editable typed draft and never transfers captured microphone audio.
 
+## Future Gemini Live driver flow
+
+The desired future driver experience uses Gemini Live as the system-owned, continuous two-way conversational layer and as a supported entry point that opens MBUX Dispatch. After explicit review and authorization, MBUX and its private control plane—not Gemini Live—would create or attach Claude or Codex work, remain the source of truth for those sessions, and return only concise, provider-neutral state. The desired display pairs an eligible MBUX state surface on Android Auto with the driver's separate conversation in Gemini Live.
+
+This is a gated product target, not a claim about current platform behavior. Whether Gemini Live can receive or read MBUX state, consume content displayed by Android Auto, or maintain a supported state-feedback loop with MBUX must be validated against public platform capabilities before implementation. Until then, Gemini Live must not be assumed to understand or dispatch private task content beyond supported app navigation.
+
+This direction does not authorize UI automation, accessibility or overlay workarounds, private or reverse-engineered components, third-party app embedding or control, or Android Auto category misrepresentation. Any MBUX car display remains independently subject to the category, template, distraction, host-testing, and maintainer-acceptance gates below; provider actions remain behind the approved control plane and applicable human gates.
+
 ## S1 Android Auto feasibility decision
 
 Reviewed against the official Android for Cars documentation on 2026-08-09, the requested driver-aware session board does **not** currently fit an Android Auto category. S1 remains a product requirement, but it is blocked at category eligibility; this repository must not add a `CarAppService`, car category, template capability, or other Android Auto declaration until that gate changes or the platform owner confirms an honest category fit.
