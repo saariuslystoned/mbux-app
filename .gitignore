@@ -1,0 +1,20 @@
+# Gradle and Android build output
+.gradle/
+**/build/
+local.properties
+
+# IDE and operating-system files
+.idea/
+*.iml
+.DS_Store
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Credentials and signing material must never enter this public repository
+.env
+.env.*
+secrets/
+*.jks
+*.keystore
+app/google-services.json

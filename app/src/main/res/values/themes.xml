@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Mbux" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">#1A5FB4</item>
+        <item name="android:navigationBarColor">#FFFFFF</item>
+        <item name="android:statusBarColor">#FFFFFF</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <style name="TextAppearance.Mbux.Headline" parent="android:style/TextAppearance.Material.Headline">
+        <item name="android:textColor">#111827</item>
+    </style>
+
+    <style name="TextAppearance.Mbux.Body" parent="android:style/TextAppearance.Material.Body1">
+        <item name="android:textColor">#374151</item>
+    </style>
+
+    <style name="TextAppearance.Mbux.Caption" parent="android:style/TextAppearance.Material.Caption">
+        <item name="android:textColor">#4B5563</item>
+    </style>
+</resources>
