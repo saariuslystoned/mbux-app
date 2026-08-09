@@ -1,7 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">MBUX Companion</string>
-    <string name="scaffold_status">Buildable phone scaffold. Broker, session registry, voice, and Android Auto surfaces are intentionally not connected.</string>
-    <string name="push_to_talk_not_connected">Push to talk · not connected</string>
-    <string name="safety_notice">No vehicle controls. No credentials on device. Car-screen support requires an approved Android Auto category.</string>
 </resources>
