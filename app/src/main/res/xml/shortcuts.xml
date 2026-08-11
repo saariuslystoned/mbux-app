@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <capability android:name="actions.intent.OPEN_APP_FEATURE">
+        <intent>
+            <url-template android:value="mbux://dispatch{?feature}" />
+            <parameter
+                android:name="feature"
+                android:key="feature" />
+        </intent>
+        <!-- Fallback fulfillment for a supported invocation with no resolved feature parameter. -->
+        <intent>
+            <url-template android:value="mbux://dispatch" />
+        </intent>
+    </capability>
+
+    <shortcut
+        android:shortcutId="dispatch"
+        android:shortcutLongLabel="@string/shortcut_dispatch_long_label"
+        android:shortcutShortLabel="@string/shortcut_dispatch_short_label">
+        <capability-binding android:key="actions.intent.OPEN_APP_FEATURE">
+            <parameter-binding
+                android:key="feature"
+                android:value="@array/dispatch_feature_synonyms" />
+        </capability-binding>
+    </shortcut>
+</shortcuts>

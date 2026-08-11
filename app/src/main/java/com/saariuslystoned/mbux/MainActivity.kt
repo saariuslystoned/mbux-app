@@ -11,6 +11,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.saariuslystoned.mbux.broker.status.UnavailableSessionStatusFeed
+import com.saariuslystoned.mbux.domain.navigation.AppLaunchRoute
 import com.saariuslystoned.mbux.platform.audio.AndroidLocalAudioCapture
 import com.saariuslystoned.mbux.platform.handoff.AndroidTaskHandoffLauncher
 import com.saariuslystoned.mbux.platform.storage.PersistentSessionBoardRepository
@@ -39,6 +41,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val initialDestination = AppLaunchRoute.resolve(
+            action = intent?.action,
+            scheme = intent?.data?.scheme,
+            host = intent?.data?.host,
+        )
         controller = VoiceCaptureController(
             capture = AndroidLocalAudioCapture(applicationContext),
             initialPermissionGranted = hasMicrophonePermission(),
@@ -55,6 +62,8 @@ class MainActivity : ComponentActivity() {
                 MbuxCompanionApp(
                     controller = controller,
                     boardRepository = boardRepository,
+                    sessionStatusFeed = UnavailableSessionStatusFeed,
+                    initialDestination = initialDestination,
                     onRequestPermission = ::requestMicrophonePermission,
                     onOpenSettings = ::openAppSettings,
                     onContinueHandoff = handoffLauncher::openAndroidChooser,

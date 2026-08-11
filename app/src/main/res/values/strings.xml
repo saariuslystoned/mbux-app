@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">MBUX Companion</string>
+    <string name="shortcut_dispatch_short_label">Dispatch</string>
+    <string name="shortcut_dispatch_long_label">Open Dispatch in MBUX</string>
+    <string-array name="dispatch_feature_synonyms">
+        <item>Dispatch</item>
+        <item>task dispatch</item>
+        <item>delegate task</item>
+    </string-array>
 </resources>

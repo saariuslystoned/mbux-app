@@ -13,10 +13,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -41,6 +39,7 @@ import com.saariuslystoned.mbux.domain.board.SessionBoardSnapshot
 import com.saariuslystoned.mbux.domain.board.SessionOrigin
 import com.saariuslystoned.mbux.domain.board.SessionProvider
 import com.saariuslystoned.mbux.domain.board.SessionStatus
+import com.saariuslystoned.mbux.domain.status.SessionStatusFeed
 import com.saariuslystoned.mbux.ui.theme.MbuxTheme
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -48,10 +47,12 @@ import kotlinx.coroutines.flow.StateFlow
 @Composable
 fun SessionBoardScreen(
     repository: SessionBoardRepository,
-    onOpenHandoff: (SessionProvider) -> Unit,
+    sessionStatusFeed: SessionStatusFeed,
+    onOpenDispatch: (SessionProvider) -> Unit,
     onOpenMicrophone: () -> Unit,
 ) {
     val snapshot by repository.snapshot.collectAsState()
+    val relayState by sessionStatusFeed.state.collectAsState()
     var mode by rememberSaveable { mutableStateOf(BoardMode.BOARD) }
     var showArchived by rememberSaveable { mutableStateOf(false) }
     var localNotice by rememberSaveable { mutableStateOf<String?>(null) }
@@ -78,19 +79,31 @@ fun SessionBoardScreen(
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                text = "Phone session board",
+                text = "${snapshot.selectedProvider.displayName} session board",
                 modifier = Modifier.padding(top = 4.dp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodyLarge,
             )
 
-            PrototypeNotice(modifier = Modifier.padding(top = 18.dp))
-
-            ProviderPicker(
-                selectedProvider = snapshot.selectedProvider,
-                onSelect = repository::selectProvider,
-                modifier = Modifier.padding(top = 18.dp),
+            PhoneSectionPicker(
+                selected = snapshot.selectedProvider.toPhoneSection(),
+                onSelect = { section ->
+                    when (section) {
+                        PhoneSection.CLAUDE -> repository.selectProvider(SessionProvider.CLAUDE)
+                        PhoneSection.CODEX -> repository.selectProvider(SessionProvider.CODEX)
+                        PhoneSection.DISPATCH -> onOpenDispatch(snapshot.selectedProvider)
+                    }
+                },
+                modifier = Modifier.padding(top = 14.dp),
             )
+
+            SessionRelayPanel(
+                state = relayState,
+                selectedProvider = snapshot.selectedProvider,
+                modifier = Modifier.padding(top = 14.dp),
+            )
+
+            PrototypeNotice(modifier = Modifier.padding(top = 14.dp))
 
             if (localNotice != null) {
                 LocalNotice(
@@ -107,8 +120,6 @@ fun SessionBoardScreen(
                     showArchived = showArchived,
                     onToggleArchived = { showArchived = !showArchived },
                     onAttach = { mode = BoardMode.ATTACH },
-                    onNewSession = { mode = BoardMode.NEW_SESSION },
-                    onDelegateTask = { onOpenHandoff(snapshot.selectedProvider) },
                     onOpenMicrophone = onOpenMicrophone,
                     onArchive = repository::archive,
                     onRestore = repository::restore,
@@ -129,12 +140,6 @@ fun SessionBoardScreen(
                             mode = BoardMode.BOARD
                         }
                     },
-                    onBack = { mode = BoardMode.BOARD },
-                )
-
-                BoardMode.NEW_SESSION -> NewSessionContent(
-                    provider = snapshot.selectedProvider,
-                    onSelectProvider = repository::selectProvider,
                     onBack = { mode = BoardMode.BOARD },
                 )
             }
@@ -175,41 +180,13 @@ private fun PrototypeNotice(modifier: Modifier = Modifier) {
         color = MaterialTheme.colorScheme.secondaryContainer,
     ) {
         Text(
-            text = "PHONE-SIDE PERSONAL PROTOTYPE  •  Local fixtures  •  No provider or car connection",
+            text = "PHONE-SIDE PERSONAL PROTOTYPE  •  Fixture actions stay local  •  No provider or car control",
             modifier = Modifier.padding(horizontal = 15.dp, vertical = 13.dp),
             color = MaterialTheme.colorScheme.onSecondaryContainer,
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
         )
-    }
-}
-
-@Composable
-private fun ProviderPicker(
-    selectedProvider: SessionProvider,
-    onSelect: (SessionProvider) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier = modifier) {
-        Text(
-            text = "PROVIDER",
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
-        )
-        Row(
-            modifier = Modifier.padding(top = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            SessionProvider.entries.forEach { provider ->
-                FilterChip(
-                    selected = provider == selectedProvider,
-                    onClick = { onSelect(provider) },
-                    label = { Text(provider.displayName) },
-                )
-            }
-        }
     }
 }
 
@@ -249,42 +226,24 @@ private fun BoardContent(
     showArchived: Boolean,
     onToggleArchived: () -> Unit,
     onAttach: () -> Unit,
-    onNewSession: () -> Unit,
-    onDelegateTask: () -> Unit,
     onOpenMicrophone: () -> Unit,
     onArchive: (String) -> Boolean,
     onRestore: (String) -> Boolean,
     onDelete: (String) -> Unit,
     onChoice: (SessionBoardItem, Int) -> Unit,
 ) {
-    Button(
-        onClick = onDelegateTask,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 14.dp),
-    ) {
-        Text("Delegate a task")
-    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 8.dp),
+            .padding(top = 14.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Button(onClick = onAttach, modifier = Modifier.weight(1f)) {
             Text("Attach existing")
         }
-        OutlinedButton(onClick = onNewSession, modifier = Modifier.weight(1f)) {
-            Text("New session")
+        OutlinedButton(onClick = onOpenMicrophone, modifier = Modifier.weight(1f)) {
+            Text("Private microphone")
         }
-    }
-    OutlinedButton(
-        onClick = onOpenMicrophone,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp),
-    ) {
-        Text("Open private microphone")
     }
 
     Text(
@@ -558,69 +517,6 @@ private fun AttachExistingContent(
 }
 
 @Composable
-private fun NewSessionContent(
-    provider: SessionProvider,
-    onSelectProvider: (SessionProvider) -> Unit,
-    onBack: () -> Unit,
-) {
-    var repository by rememberSaveable { mutableStateOf("") }
-    var taskTitle by rememberSaveable { mutableStateOf("") }
-
-    SectionHeader(
-        title = "New session",
-        description = "Provider and repository are required. Real Claude/Codex launch wiring is future work; this form cannot launch or contact anything.",
-    )
-    ProviderPicker(
-        selectedProvider = provider,
-        onSelect = onSelectProvider,
-        modifier = Modifier.padding(top = 14.dp),
-    )
-    OutlinedTextField(
-        value = repository,
-        onValueChange = { repository = it },
-        label = { Text("Repository (required)") },
-        singleLine = true,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 12.dp),
-    )
-    OutlinedTextField(
-        value = taskTitle,
-        onValueChange = { taskTitle = it },
-        label = { Text("Short task title (required)") },
-        singleLine = true,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 10.dp),
-    )
-    Button(
-        onClick = {},
-        enabled = false,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 14.dp),
-    ) {
-        Text(
-            if (repository.isBlank() || taskTitle.isBlank()) {
-                "Provider, repository, and title required"
-            } else {
-                "Launch wiring not available in this prototype"
-            },
-        )
-    }
-    Text(
-        text = "No draft is saved and no provider request is made from this screen.",
-        modifier = Modifier.padding(top = 9.dp),
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        style = MaterialTheme.typography.bodySmall,
-    )
-    OutlinedButton(onClick = onBack, modifier = Modifier.padding(top = 18.dp)) {
-        Text("Back to board")
-    }
-    Spacer(modifier = Modifier.height(28.dp))
-}
-
-@Composable
 private fun SectionHeader(title: String, description: String) {
     Text(
         text = title,
@@ -640,7 +536,11 @@ private fun SectionHeader(title: String, description: String) {
 private enum class BoardMode {
     BOARD,
     ATTACH,
-    NEW_SESSION,
+}
+
+private fun SessionProvider.toPhoneSection(): PhoneSection = when (this) {
+    SessionProvider.CLAUDE -> PhoneSection.CLAUDE
+    SessionProvider.CODEX -> PhoneSection.CODEX
 }
 
 @Preview(showBackground = true)
@@ -649,7 +549,8 @@ private fun SessionBoardPreview() {
     MbuxTheme {
         SessionBoardScreen(
             repository = PreviewBoardRepository(),
-            onOpenHandoff = {},
+            sessionStatusFeed = com.saariuslystoned.mbux.broker.status.UnavailableSessionStatusFeed,
+            onOpenDispatch = {},
             onOpenMicrophone = {},
         )
     }

@@ -3,6 +3,7 @@ package com.saariuslystoned.mbux.domain.handoff
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -10,18 +11,41 @@ class TaskHandoffTest {
     @Test
     fun `shared brief contains reviewed target repository task and disclosure`() {
         val text = TaskHandoffBuilder.buildPlainText(
-            TaskHandoffDraft(
+            TaskHandoffDraft.publicProof(
                 target = HandoffTarget.CODEX_CHATGPT,
-                repository = "  mbux-app  ",
                 taskBrief = "  Run the focused tests.  ",
             ),
         )
 
         assertTrue(text.contains("Intended destination: Codex / ChatGPT"))
-        assertTrue(text.contains("Repository: mbux-app"))
+        assertTrue(text.contains("Repository: saariuslystoned/mbux-app"))
         assertTrue(text.contains("Task: Run the focused tests."))
         assertTrue(text.contains("has not created or sent a task"))
-        assertFalse(text.contains("  mbux-app  "))
+    }
+
+    @Test
+    fun `public proof draft is fixed to the single approved repository`() {
+        val draft = TaskHandoffDraft.publicProof(
+            target = HandoffTarget.CLAUDE,
+            taskBrief = "Review the proof",
+        )
+
+        assertEquals("saariuslystoned/mbux-app", TaskHandoffDraft.PUBLIC_PROOF_REPOSITORY)
+        assertEquals(TaskHandoffDraft.PUBLIC_PROOF_REPOSITORY, draft.repository)
+        assertTrue(draft.isReady)
+    }
+
+    @Test
+    fun `oversized task brief fails closed before intent construction`() {
+        val draft = TaskHandoffDraft.publicProof(
+            target = HandoffTarget.CODEX_CHATGPT,
+            taskBrief = "x".repeat(TaskHandoffDraft.MAX_TASK_BRIEF_LENGTH + 1),
+        )
+
+        assertFalse(draft.isReady)
+        assertThrows(IllegalArgumentException::class.java) {
+            TaskHandoffBuilder.buildPlainText(draft)
+        }
     }
 
     @Test
@@ -35,16 +59,15 @@ class TaskHandoffTest {
     @Test
     fun `claude draft endpoint encodes task and repository as query components`() {
         val endpoint = TaskHandoffBuilder.endpointFor(
-            TaskHandoffDraft(
+            TaskHandoffDraft.publicProof(
                 target = HandoffTarget.CLAUDE,
-                repository = "owner/repo & tools",
                 taskBrief = "Fix flaky test? #1 — café",
             ),
             HandoffRoute.CLAUDE_CODE_DRAFT,
         ) as TaskHandoffEndpoint.ClaudeCodeDraft
 
         assertEquals(
-            "claude://code/new?q=Fix%20flaky%20test%3F%20%231%20%E2%80%94%20caf%C3%A9&repo=owner%2Frepo%20%26%20tools",
+            "claude://code/new?q=Fix%20flaky%20test%3F%20%231%20%E2%80%94%20caf%C3%A9&repo=saariuslystoned%2Fmbux-app",
             endpoint.uri,
         )
     }
@@ -71,9 +94,8 @@ class TaskHandoffTest {
         )
     }
 
-    private fun readyDraft(target: HandoffTarget) = TaskHandoffDraft(
+    private fun readyDraft(target: HandoffTarget) = TaskHandoffDraft.publicProof(
         target = target,
-        repository = "mbux-app",
         taskBrief = "Run the focused tests",
     )
 }

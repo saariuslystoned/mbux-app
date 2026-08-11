@@ -13,7 +13,23 @@ data class TaskHandoffDraft(
     val taskBrief: String,
 ) {
     val isReady: Boolean
-        get() = repository.isNotBlank() && taskBrief.isNotBlank()
+        get() = repository.isNotBlank() &&
+            taskBrief.isNotBlank() &&
+            taskBrief.trim().length <= MAX_TASK_BRIEF_LENGTH
+
+    companion object {
+        const val PUBLIC_PROOF_REPOSITORY = "saariuslystoned/mbux-app"
+        const val MAX_TASK_BRIEF_LENGTH = 4_000
+
+        fun publicProof(
+            target: HandoffTarget,
+            taskBrief: String,
+        ) = TaskHandoffDraft(
+            target = target,
+            repository = PUBLIC_PROOF_REPOSITORY,
+            taskBrief = taskBrief,
+        )
+    }
 }
 
 enum class HandoffRoute {
@@ -68,6 +84,9 @@ object TaskHandoffBuilder {
 
     private fun TaskHandoffDraft.requireTaskBrief(): String = taskBrief.trim().also {
         require(it.isNotEmpty()) { "Task brief is required" }
+        require(it.length <= TaskHandoffDraft.MAX_TASK_BRIEF_LENGTH) {
+            "Task brief exceeds the supported length"
+        }
     }
 
     private fun percentEncode(value: String): String = buildString {

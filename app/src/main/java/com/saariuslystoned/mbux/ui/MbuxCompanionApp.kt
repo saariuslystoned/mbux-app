@@ -7,11 +7,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -47,61 +50,93 @@ import com.saariuslystoned.mbux.domain.board.SessionBoardRepository
 import com.saariuslystoned.mbux.domain.board.SessionProvider
 import com.saariuslystoned.mbux.domain.handoff.HandoffTarget
 import com.saariuslystoned.mbux.domain.handoff.TaskHandoffDraft
+import com.saariuslystoned.mbux.domain.navigation.AppLaunchDestination
+import com.saariuslystoned.mbux.domain.status.SessionStatusFeed
 import com.saariuslystoned.mbux.ui.theme.MbuxTheme
 
 @Composable
 fun MbuxCompanionApp(
     controller: VoiceCaptureController,
     boardRepository: SessionBoardRepository,
+    sessionStatusFeed: SessionStatusFeed,
+    initialDestination: AppLaunchDestination = AppLaunchDestination.DEFAULT,
     onRequestPermission: () -> Unit,
     onOpenSettings: () -> Unit,
     onContinueHandoff: (TaskHandoffDraft) -> Boolean,
     onOpenClaudeCodeDraft: (TaskHandoffDraft) -> Boolean,
 ) {
     val state by controller.state.collectAsState()
-    var destination by rememberSaveable { mutableStateOf(PhoneDestination.SESSION_BOARD) }
+    var destination by rememberSaveable {
+        mutableStateOf(
+            when (initialDestination) {
+                AppLaunchDestination.DEFAULT -> PhoneDestination.SESSION_BOARD
+                AppLaunchDestination.DISPATCH -> PhoneDestination.DISPATCH
+            },
+        )
+    }
     var handoffTarget by rememberSaveable { mutableStateOf(HandoffTarget.CLAUDE) }
 
-    when (destination) {
-        PhoneDestination.SESSION_BOARD -> SessionBoardScreen(
-            repository = boardRepository,
-            onOpenHandoff = { provider ->
-                handoffTarget = when (provider) {
-                    SessionProvider.CLAUDE -> HandoffTarget.CLAUDE
-                    SessionProvider.CODEX -> HandoffTarget.CODEX_CHATGPT
-                }
-                destination = PhoneDestination.HANDOFF
-            },
-            onOpenMicrophone = { destination = PhoneDestination.MICROPHONE },
-        )
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.safeDrawing),
+    ) {
+        when (destination) {
+            PhoneDestination.SESSION_BOARD -> SessionBoardScreen(
+                repository = boardRepository,
+                sessionStatusFeed = sessionStatusFeed,
+                onOpenDispatch = { provider ->
+                    handoffTarget = when (provider) {
+                        SessionProvider.CLAUDE -> HandoffTarget.CLAUDE
+                        SessionProvider.CODEX -> HandoffTarget.CODEX_CHATGPT
+                    }
+                    destination = PhoneDestination.DISPATCH
+                },
+                onOpenMicrophone = { destination = PhoneDestination.MICROPHONE },
+            )
 
-        PhoneDestination.HANDOFF -> TaskHandoffScreen(
-            initialTarget = handoffTarget,
-            onOpenBoard = { destination = PhoneDestination.SESSION_BOARD },
-            onContinueIn = onContinueHandoff,
-            onOpenClaudeCodeDraft = onOpenClaudeCodeDraft,
-        )
+            PhoneDestination.DISPATCH -> TaskHandoffScreen(
+                initialTarget = handoffTarget,
+                onSelectSection = { section ->
+                    when (section) {
+                        PhoneSection.CLAUDE -> {
+                            boardRepository.selectProvider(SessionProvider.CLAUDE)
+                            destination = PhoneDestination.SESSION_BOARD
+                        }
 
-        PhoneDestination.MICROPHONE -> VoiceCaptureScreen(
-            state = state,
-            onOpenBoard = {
-                controller.cancel("Recording stopped when leaving the microphone screen")
-                destination = PhoneDestination.SESSION_BOARD
-            },
-            onRequestPermission = onRequestPermission,
-            onOpenSettings = onOpenSettings,
-            onHoldStarted = controller::beginHold,
-            onHoldReleased = controller::releaseHold,
-            onHoldCancelled = { controller.cancel("Touch interaction ended; audio discarded") },
-            onCancel = controller::cancel,
-            onRetry = controller::retry,
-        )
+                        PhoneSection.CODEX -> {
+                            boardRepository.selectProvider(SessionProvider.CODEX)
+                            destination = PhoneDestination.SESSION_BOARD
+                        }
+
+                        PhoneSection.DISPATCH -> Unit
+                    }
+                },
+                onContinueIn = onContinueHandoff,
+                onOpenClaudeCodeDraft = onOpenClaudeCodeDraft,
+            )
+
+            PhoneDestination.MICROPHONE -> VoiceCaptureScreen(
+                state = state,
+                onOpenBoard = {
+                    controller.cancel("Recording stopped when leaving the microphone screen")
+                    destination = PhoneDestination.SESSION_BOARD
+                },
+                onRequestPermission = onRequestPermission,
+                onOpenSettings = onOpenSettings,
+                onHoldStarted = controller::beginHold,
+                onHoldReleased = controller::releaseHold,
+                onHoldCancelled = { controller.cancel("Touch interaction ended; audio discarded") },
+                onCancel = controller::cancel,
+                onRetry = controller::retry,
+            )
+        }
     }
 }
 
 private enum class PhoneDestination {
     SESSION_BOARD,
-    HANDOFF,
+    DISPATCH,
     MICROPHONE,
 }
 
