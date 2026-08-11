@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">MBUX Companion</string>
-    <string name="scaffold_status">Buildable phone scaffold. Broker, session registry, voice, and Android Auto surfaces are intentionally not connected.</string>
-    <string name="push_to_talk_not_connected">Push to talk · not connected</string>
-    <string name="safety_notice">No vehicle controls. No credentials on device. Car-screen support requires an approved Android Auto category.</string>
+    <string name="shortcut_dispatch_short_label">Dispatch</string>
+    <string name="shortcut_dispatch_long_label">Open Dispatch in MBUX</string>
+    <string-array name="dispatch_feature_synonyms">
+        <item>Dispatch</item>
+        <item>task dispatch</item>
+        <item>delegate task</item>
+    </string-array>
 </resources>
